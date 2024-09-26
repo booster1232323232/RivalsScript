@@ -3,7 +3,7 @@ if game.PlaceId == 17625359962
 local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/xHeptc/Kavo-UI-Library/main/source.lua"))()
 
 -- Create the main window with the new name and theme
-local Window = Library.CreateLib("Rivals 💦 | V1", "Ocean")
+local Window = Library.CreateLib("Advanced Water 💦 | V.1", "Ocean")
 
 -- Variables for Aimbot
 local aimbotEnabled = false
