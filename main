@@ -1,0 +1,219 @@
+if game.PlaceId == 17625359962
+-- Load Kavo UI Library
+local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/xHeptc/Kavo-UI-Library/main/source.lua"))()
+
+-- Create the main window with the new name and theme
+local Window = Library.CreateLib("Rivals 💦 | V1", "Ocean")
+
+-- Variables for Aimbot
+local aimbotEnabled = false
+local aimRadius = 100 -- Aimbot radius
+local smoothness = 0.2 -- How smoothly the camera moves (1 = instant, lower = slower)
+local player = game.Players.LocalPlayer
+local camera = game.Workspace.CurrentCamera
+
+-- Function to get the closest player's hitbox (torso) within the aimbot radius
+local function getClosestPlayerInRadius()
+    local closestPlayer = nil
+    local shortestDistance = aimRadius
+
+    for _, v in pairs(game.Players:GetPlayers()) do
+        if v ~= player and v.Team ~= player.Team and v.Character and v.Character:FindFirstChild("HumanoidRootPart") then
+            local targetPos = v.Character.HumanoidRootPart.Position
+            local screenPos, onScreen = camera:WorldToViewportPoint(targetPos)
+            if onScreen then
+                local mousePos = Vector2.new(game.Players.LocalPlayer:GetMouse().X, game.Players.LocalPlayer:GetMouse().Y)
+                local distance = (Vector2.new(screenPos.X, screenPos.Y) - mousePos).magnitude
+
+                if distance < shortestDistance then
+                    closestPlayer = v
+                    shortestDistance = distance
+                end
+            end
+        end
+    end
+
+    return closestPlayer
+end
+
+-- Smooth camera movement towards a target
+local function smoothAimbot(targetPosition)
+    local currentCameraCFrame = camera.CFrame
+    local targetCFrame = CFrame.new(camera.CFrame.Position, targetPosition)
+    camera.CFrame = currentCameraCFrame:Lerp(targetCFrame, smoothness)
+end
+
+-- Function to create or update ESP for players
+local function updateESP()
+    for _, v in pairs(game.Players:GetPlayers()) do
+        if v.Character and v.Character:FindFirstChild("HumanoidRootPart") then
+            local head = v.Character:FindFirstChild("Head")
+            if not head then return end
+
+            local billboard = v.Character:FindFirstChildOfClass("BillboardGui")
+            if not billboard then
+                billboard = Instance.new("BillboardGui")
+                billboard.Size = UDim2.new(1, 0, 1, 0)
+                billboard.AlwaysOnTop = true
+                billboard.StudsOffset = Vector3.new(0, 3, 0)
+                billboard.Parent = head
+            end
+
+            local label = billboard:FindFirstChildOfClass("TextLabel")
+            if not label then
+                label = Instance.new("TextLabel")
+                label.Size = UDim2.new(1, 0, 1, 0)
+                label.BackgroundTransparency = 1
+                label.TextSize = 14
+                label.Font = Enum.Font.SourceSansBold
+                label.TextStrokeTransparency = 0
+                label.Parent = billboard
+            end
+
+            if v.Team == player.Team then
+                -- Teammates: Blue
+                label.Text = "Teammate"
+                label.TextColor3 = Color3.fromRGB(0, 0, 255)
+            else
+                -- Enemies: Red
+                label.Text = "Enemy"
+                label.TextColor3 = Color3.fromRGB(255, 0, 0)
+            end
+        end
+    end
+end
+
+-- Aimbot Section
+local AimbotTab = Window:NewTab("Aimbot")
+local AimbotSection = AimbotTab:NewSection("Aimbot Features")
+
+-- Aimbot Toggle
+AimbotSection:NewToggle("Aimbot", "Lock onto the closest enemy torso.", function(state)
+    aimbotEnabled = state
+    if aimbotEnabled then
+        print("Aimbot Enabled")
+        -- Aimbot Logic
+        game:GetService("RunService").RenderStepped:Connect(function()
+            if aimbotEnabled then
+                local target = getClosestPlayerInRadius()
+                if target and target.Character and target.Character:FindFirstChild("HumanoidRootPart") then
+                    smoothAimbot(target.Character.HumanoidRootPart.Position)
+                end
+            end
+        end)
+    else
+        print("Aimbot Disabled")
+    end
+end)
+
+-- Slider for Aimbot Radius
+AimbotSection:NewSlider("Aimbot Radius", "Set the radius of the aimbot.", 300, 50, function(value)
+    aimRadius = value
+    print("Aimbot Radius set to: " .. value)
+end)
+
+-- Slider for Aimbot Smoothness
+AimbotSection:NewSlider("Aimbot Smoothness", "Adjust how smoothly the aimbot moves.", 1, 0.1, function(value)
+    smoothness = value
+    print("Aimbot Smoothness set to: " .. value)
+end)
+
+-- ESP Section (Extra Sensory Perception)
+local ESPTab = Window:NewTab("ESP")
+local ESPSection = ESPTab:NewSection("ESP Features")
+
+-- ESP Toggle
+ESPSection:NewToggle("ESP", "See enemies and teammates through walls.", function(state)
+    if state then
+        print("ESP Enabled")
+        -- ESP Logic
+        game:GetService("RunService").RenderStepped:Connect(function()
+            updateESP()
+        end)
+    else
+        print("ESP Disabled")
+        -- Remove ESP
+        for _, v in pairs(game.Players:GetPlayers()) do
+            if v.Character and v.Character:FindFirstChild("HumanoidRootPart") then
+                local billboard = v.Character:FindFirstChildOfClass("BillboardGui")
+                if billboard then
+                    billboard:Destroy()
+                end
+            end
+        end
+    end
+end)
+
+-- Player Enhancements Tab
+local PlayerTab = Window:NewTab("Player")
+local PlayerSection = PlayerTab:NewSection("Player Enhancements")
+
+-- Walkspeed Slider
+PlayerSection:NewSlider("Walkspeed", "Adjust your walk speed.", 50, 16, function(value)
+    game.Players.LocalPlayer.Character.Humanoid.WalkSpeed = value
+    print("Walkspeed set to: " .. value)
+end)
+
+-- Jump Power Slider
+PlayerSection:NewSlider("Jump Power", "Adjust your jump height.", 100, 50, function(value)
+    game.Players.LocalPlayer.Character.Humanoid.JumpPower = value
+    print("Jump Power set to: " .. value)
+end)
+
+-- Miscellaneous Tab
+local MiscTab = Window:NewTab("Miscellaneous")
+local MiscSection = MiscTab:NewSection("Extra Features")
+
+-- Rejoin Button
+MiscSection:NewButton("Rejoin Game", "Rejoin the current game server.", function()
+    local TeleportService = game:GetService("TeleportService")
+    TeleportService:Teleport(game.PlaceId, game.Players.LocalPlayer)
+end)
+
+-- Keybind to Toggle UI
+MiscSection:NewKeybind("Toggle UI", "Press a key to show/hide the UI.", Enum.KeyCode.RightControl, function()
+    Library:ToggleUI()
+end)
+
+-- Keybind for Aimbot
+MiscSection:NewKeybind("Aimbot Keybind", "Press a key to toggle aimbot.", Enum.KeyCode.E, function()
+    aimbotEnabled = not aimbotEnabled
+    print("Aimbot toggled to: " .. tostring(aimbotEnabled))
+end)
+
+-- Settings Section
+local SettingsTab = Window:NewTab("Settings")
+local SettingsSection = SettingsTab:NewSection("UI Settings")
+
+-- Destroy UI Button
+SettingsSection:NewButton("Destroy UI", "Close and remove the entire UI.", function()
+    game.CoreGui:FindFirstChild("Advanced Water 💦 | V.1"):Destroy()
+end)
+
+-- Minimize/Maximize UI Button
+local minimized = false
+local function toggleUI()
+    if minimized then
+        Library:ToggleUI() -- Show the UI
+        minimized = false
+    else
+        Library:ToggleUI() -- Hide the UI
+        minimized = true
+    end
+end
+
+SettingsSection:NewButton("Minimize/Maximize UI", "Minimize or maximize the UI.", function()
+    toggleUI()
+end)
+
+-- Keybind to Toggle UI Visibility
+SettingsSection:NewKeybind("Close UI", "Press a key to hide the UI.", Enum.KeyCode.RightAlt, function()
+    toggleUI()
+end)
+
+-- Credits Tab
+local CreditsTab = Window:NewTab("Credits")
+local CreditsSection = CreditsTab:NewSection("Credits")
+
+-- Credits Information
+CreditsSection:NewLabel("Script developed by youngthedev#0000")
